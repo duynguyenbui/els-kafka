@@ -1,0 +1,113 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: debezium/postgres:15-alpine
+    build: ./docker/postgres
+    ports:
+      - 5432:5432
+    volumes:
+      - ./docker/postgres/postgresql.conf.sample:/usr/share/postgresql/postgresql.conf.sample
+      - ./docker/postgres/postgres_init.sql:/docker-entrypoint-initdb.d/postgres_init.sql
+      - postgres_data:/var/lib/postgresql/data
+    command: postgres -c 'max_connections=500'
+    environment:
+      - POSTGRES_USER=teknix
+      - POSTGRES_PASSWORD=teknixpw
+  # elasticsearch and kibana
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.6.2
+    volumes:
+      - els_data:/usr/share/elasticsearch/data
+    environment:
+      - xpack.security.enabled=false
+      - 'discovery.type=single-node'
+    ports:
+      - 9200:9200
+      - 9300:9300
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.6.2
+    environment:
+      SERVER_NAME: kibana
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    ports:
+      - '5601:5601'
+    depends_on:
+      - elasticsearch
+  zookeeper:
+    image: debezium/zookeeper:2.3
+    hostname: zookeeper-go
+    ports:
+      - 2181:2181
+      - 2888:2888
+      - 3888:3888
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+  kafka:
+    image: confluentinc/cp-kafka:7.0.9
+    hostname: kafka
+    ports:
+      - 9092:9092
+      - 29092:29092
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+  kafka-connect:
+    image: debezium/connect:2.3
+    ports:
+      - 8083:8083
+      - 5005:5005
+    depends_on:
+      - kafka
+    environment:
+      - BOOTSTRAP_SERVERS=kafka:9092
+      - GROUP_ID=1
+      - CONFIG_STORAGE_TOPIC=kafka_connect_configs
+      - OFFSET_STORAGE_TOPIC=kafka_connect_offsets
+      - CONNECT_PRODUCER_MAX_REQUEST_SIZE=5242880
+  elsgo-search:
+    image: duynguyenbui/elsgo-search:latest
+    build:
+      context: ./internacs-els-kafka
+      dockerfile: ./Dockerfile
+    ports:
+      - 8080:8080
+    restart: on-failure
+    environment:
+      - APP_ENV=local
+      - KAFKA_URL=kafka:29092
+      - KAFKA_TOPIC=dbhotels.public.hotels
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - ELASTIC_INDEX=hotels
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=teknix
+      - POSTGRES_PASSWORD=teknixpw
+      - POSTGRES_DATABASE=hotels
+    depends_on:
+      - elasticsearch
+      - postgres
+  kafka-ui:
+    image: provectuslabs/kafka-ui
+    hostname: kafka-ui
+    ports:
+      - 9999:8080
+    depends_on:
+      - kafka
+    environment:
+      DYNAMIC_CONFIG_ENABLED: 'true'
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: 'kafka:9092'
+      KAFKA_CLUSTERS_0_KAFKACONNECT_0_NAME: kafka-connect
+      KAFKA_CLUSTERS_0_KAFKACONNECT_0_ADDRESS: http://kafka-connect:8083
+volumes:
+  postgres_data:
+  els_data:

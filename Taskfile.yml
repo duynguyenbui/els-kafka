@@ -1,0 +1,12 @@
+version: '3'
+
+tasks:
+  dockers:
+    cmds: 
+      - docker compose -f docker-compose.yml -f docker-compose.search.yml up -d
+  build:
+    cmd: docker compose build
+  release:
+    cmd: docker compose down --remove-orphans
+  connector:
+    cmd: bash start-source-connector.sh
