@@ -16,6 +16,7 @@ var (
 func InitElasticSearch() {
 	client, err := elasticsearch.NewClient(elasticsearch.Config{
 		Addresses: []string{
+			// TODO: Make this configurable
 			"http://elasticsearch:9200",
 		},
 	})

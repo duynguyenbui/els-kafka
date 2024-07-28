@@ -65,6 +65,5 @@ func registerDebeziumConsumer(groupId string) {
 
 			global.Els.Index(index, bytes.NewReader(data))
 		}
-
 	}
 }

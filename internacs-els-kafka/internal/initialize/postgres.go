@@ -31,6 +31,8 @@ func InitPostgres() {
 		Database: os.Getenv("POSTGRES_DATABASE"),
 	}
 
+	fmt.Printf("Connecting to PostgreSQL with the following configuration: %+v\n", pgConfig)
+
 	connStr := fmt.Sprintf("user=%s password=%s host=%s port=%d dbname=%s sslmode=disable",
 		pgConfig.Username, pgConfig.Password, pgConfig.Host, pgConfig.Port, pgConfig.Database)
 
@@ -46,6 +48,6 @@ func InitPostgres() {
 	}
 
 	global.Pdb = db
-
+	
 	fmt.Println("Connected to PostgreSQL successfully!")
 }

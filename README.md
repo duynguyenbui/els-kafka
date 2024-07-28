@@ -6,4 +6,4 @@
 
 ## Recommendations
 
-I strongly recommend using this project for testing purposes not for production < 3
+I strongly recommend using this project for testing purposes because the logic of all lines of code is not optimized for the production envrionment  < 3

@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"internacs-els-kafka/global"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -28,41 +30,15 @@ func (s *Server) RegisterRoutes() http.Handler {
 	}
 	r.GET("/", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{
-			"message": "Hello World",
+			"alive": "heaththy",
 		})
 	})
-
-	r.GET("/els/indices", s.GetAllIndices)
 
 	r.POST("/els/search", s.Search)
 
 	r.POST("/db/create", s.Create)
 
 	return r
-}
-
-func (s *Server) GetAllIndices(c *gin.Context) {
-	client := global.Els
-
-	res, err := client.Indices.Get([]string{"*"})
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	defer res.Body.Close()
-
-	if res.IsError() {
-		c.JSON(res.StatusCode, gin.H{"error": res.String()})
-		return
-	}
-
-	var indices map[string]interface{}
-	if err := json.NewDecoder(res.Body).Decode(&indices); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, indices)
 }
 
 func (s *Server) Search(c *gin.Context) {
@@ -110,7 +86,20 @@ func (s *Server) Search(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
+func randomAddress() string {
+	addresses := []string{
+		"41/53 Mechnikov Street, Rostov-on-Don",
+		"123 Main Street, New York",
+		"456 Elm Street, Chicago",
+		"789 Maple Avenue, Los Angeles",
+		"1010 Oak Lane, San Francisco",
+	}
+	rand.Seed(time.Now().UnixNano())
+	return addresses[rand.Intn(len(addresses))]
+}
+
 func (s *Server) Create(c *gin.Context) {
+	address := randomAddress()
 	insertQuery := `
 		INSERT INTO hotels (
 			address,
@@ -145,7 +134,7 @@ func (s *Server) Create(c *gin.Context) {
 			semantic_version
 		)
 		VALUES (
-			'41/53 Mechnikov Street, Rostov-on-Don',
+			$1, -- Random address
 			'[{"amenities":["ATM","Shopping on site","Elevator/lift"],"group_name":"General"},{"amenities":["Cafe"],"group_name":"Meals"},{"amenities":["Wi-Fi"],"group_name":"Internet"},{"amenities":["Parking"],"group_name":"Parking"},{"amenities":["Children''s playground","Kids'' TV Networks"],"group_name":"Kids"}]',
 			'15:00:00',
 			'11:00:00',
@@ -178,7 +167,7 @@ func (s *Server) Create(c *gin.Context) {
 		)
 	`
 
-	_, err := global.Pdb.Exec(insertQuery)
+	_, err := global.Pdb.Exec(insertQuery, address)
 	if err != nil {
 		c.JSON(500, gin.H{"error": "Failed to execute query"})
 		return

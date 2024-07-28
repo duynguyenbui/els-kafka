@@ -12,4 +12,6 @@ func Run() {
 
 	// Init Kafka
 	go registerDebeziumConsumer("elsgo")
+
+	// go data.Seed()
 }

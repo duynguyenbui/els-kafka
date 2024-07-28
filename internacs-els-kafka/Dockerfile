@@ -17,7 +17,6 @@ FROM alpine:3.18
 ENV PORT=8080
 ENV GIN_MODE=release
 
-# Copy the pre-built binary from the builder stage
 COPY --from=builder /app/main /main
 
 # Expose the port
