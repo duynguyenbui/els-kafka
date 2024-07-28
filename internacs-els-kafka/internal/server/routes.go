@@ -28,7 +28,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 		gin.SetMode(gin.ReleaseMode)
 		r = gin.New()
 	}
-	r.GET("/", func(ctx *gin.Context) {
+	r.GET("/healthz", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{
 			"alive": "heaththy",
 		})
