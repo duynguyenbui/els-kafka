@@ -143,6 +143,8 @@ func main() {
 
 	db = pgsql
 
+	fmt.Println("PostgreSQL connection established successfully (for test)")
+
 	parseDump("partner_feed_en_v3_minimal.jsonl.zst")
 }
 
