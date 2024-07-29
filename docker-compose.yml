@@ -1,5 +1,37 @@
+version: '3.4'
+
 services:
-  # Necessary images
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.14.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - ELASTIC_USERNAME=elastic
+      - ELASTIC_PASSWORD=elasticpw
+      - xpack.security.enabled=true
+    ports:
+      - 9200:9200
+      - 9300:9300
+    volumes:
+      - els_data:/usr/share/elasticsearch/data
+    networks:
+      - kafkaels
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.14.0
+    container_name: kibana
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=elasticpw
+      - xpack.security.enabled=true
+    links:
+      - elasticsearch
+    ports:
+      - 5601:5601
+    networks:
+      - kafkaels
+    depends_on:
+      - elasticsearch
   postgres:
     image: debezium/postgres:15-alpine
     build: ./docker/postgres
@@ -13,33 +45,27 @@ services:
     environment:
       - POSTGRES_USER=teknix
       - POSTGRES_PASSWORD=teknixpw
+    networks:
+      - kafkaels
   # elasticsearch
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.6.2
-    volumes:
-      - els_data:/usr/share/elasticsearch/data
-    environment:
-      - xpack.security.enabled=false
-      - 'discovery.type=single-node'
-    # ports:
-    #   - 9200:9200
-    #   - 9300:9300
   zookeeper:
     image: debezium/zookeeper:2.3
     hostname: zookeeper-go
-    # ports:
-    #   - 2181:2181
-    #   - 2888:2888
-    #   - 3888:3888
+    ports:
+      - 2181:2181
+      - 2888:2888
+      - 3888:3888
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - kafkaels
   kafka:
     image: confluentinc/cp-kafka:7.0.9
     hostname: kafka
-    # ports:
-    #   - 9092:9092
-    #   - 29092:29092
+    ports:
+      - 9092:9092
+      - 29092:29092
     depends_on:
       - zookeeper
     environment:
@@ -51,11 +77,13 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+    networks:
+      - kafkaels
   kafka-connect:
     image: debezium/connect:2.3
-    # ports:
-    #   - 8083:8083
-    #   - 5005:5005
+    ports:
+      - 8083:8083
+      - 5005:5005
     depends_on:
       - kafka
     environment:
@@ -64,6 +92,25 @@ services:
       - CONFIG_STORAGE_TOPIC=kafka_connect_configs
       - OFFSET_STORAGE_TOPIC=kafka_connect_offsets
       - CONNECT_PRODUCER_MAX_REQUEST_SIZE=5242880
+    networks:
+      - kafkaels
+  kafka-ui:
+    image: provectuslabs/kafka-ui
+    hostname: kafka-ui
+    ports:
+      - 9999:8080
+    depends_on:
+      - kafka
+    environment:
+      DYNAMIC_CONFIG_ENABLED: 'true'
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: 'kafka:9092'
+      KAFKA_CLUSTERS_0_KAFKACONNECT_0_NAME: kafka-connect
+      KAFKA_CLUSTERS_0_KAFKACONNECT_0_ADDRESS: http://kafka-connect:8083
+      AUTH_TYPE: 'LOGIN_FORM'
+      SPRING_SECURITY_USER_NAME: kafkaui
+      SPRING_SECURITY_USER_PASSWORD: kafkauipw
+    networks:
+      - kafkaels
   elsgo-search:
     image: duynguyenbui/elsgo-search:latest
     build:
@@ -73,7 +120,7 @@ services:
       - 8080:8080
     restart: on-failure
     environment:
-      - APP_ENV=local
+      - APP_ENV=production
       - KAFKA_URL=kafka:29092
       - KAFKA_TOPIC=dbhotels.public.hotels
       - ELASTICSEARCH_URL=http://elasticsearch:9200
@@ -86,28 +133,11 @@ services:
     depends_on:
       - elasticsearch
       - postgres
-  # Comment if you run on production environment
-  # kibana:
-  #   image: docker.elastic.co/kibana/kibana:8.6.2
-  #   environment:
-  #     SERVER_NAME: kibana
-  #     ELASTICSEARCH_HOSTS: http://elasticsearch:9200
-  #   ports:
-  #     - '5601:5601'
-  #   depends_on:
-  #     - elasticsearch
-  # kafka-ui:
-  #   image: provectuslabs/kafka-ui
-  #   hostname: kafka-ui
-  #   ports:
-  #     - 9999:8080
-  #   depends_on:
-  #     - kafka
-  #   environment:
-  #     DYNAMIC_CONFIG_ENABLED: 'true'
-  #     KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: 'kafka:9092'
-  #     KAFKA_CLUSTERS_0_KAFKACONNECT_0_NAME: kafka-connect
-  #     KAFKA_CLUSTERS_0_KAFKACONNECT_0_ADDRESS: http://kafka-connect:8083
+    networks:
+      - kafkaels
 volumes:
   postgres_data:
   els_data:
+networks:
+  kafkaels:
+    driver: bridge

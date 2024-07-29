@@ -3,12 +3,12 @@ package global
 import (
 	"database/sql"
 
-	"github.com/elastic/go-elasticsearch/v8"
+	elasticsearchv7 "github.com/elastic/go-elasticsearch/v7"
 	"github.com/redis/go-redis/v9"
 )
 
 var (
 	Rdb *redis.Client
-	Els *elasticsearch.Client
+	Els *elasticsearchv7.Client
 	Pdb *sql.DB
 )

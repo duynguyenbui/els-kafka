@@ -39,6 +39,7 @@ func processHotel(hotelRaw []byte) {
 	err := json.Unmarshal(hotelRaw, &hotel)
 
 	if err == nil {
+		fmt.Printf("%s\n", hotel.Name)
 		insertHotel(db, hotel)
 	}
 

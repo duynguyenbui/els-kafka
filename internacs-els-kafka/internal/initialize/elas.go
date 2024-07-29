@@ -6,26 +6,30 @@ import (
 	"log"
 	"os"
 
-	"github.com/elastic/go-elasticsearch/v8"
+	elasticsearch7 "github.com/elastic/go-elasticsearch/v7"
 )
 
 var (
 	index = os.Getenv("ELASTIC_INDEX")
 )
 
+// TODO: Change it to be configurable
 func InitElasticSearch() {
-	client, err := elasticsearch.NewClient(elasticsearch.Config{
+	cfg := elasticsearch7.Config{
 		Addresses: []string{
-			// TODO: Make this configurable
 			"http://elasticsearch:9200",
 		},
-	})
+		Username: "elastic",
+		Password: "elasticpw",
+	}
+	es, err := elasticsearch7.NewClient(cfg)
+
 	if err != nil {
 		log.Fatalf("Error creating the client: %s", err)
 	}
 
 	// Uncomment if you want to check connection
-	res, err := client.Info()
+	res, err := es.Info()
 	if err != nil {
 		log.Fatalf("Error getting response: %s", err)
 	}
@@ -39,5 +43,5 @@ func InitElasticSearch() {
 
 	fmt.Println("Elasticsearch connection established successfully")
 
-	global.Els = client
+	global.Els = es
 }
