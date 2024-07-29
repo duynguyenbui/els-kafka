@@ -20,7 +20,6 @@ import (
 	elasticsearch7 "github.com/elastic/go-elasticsearch/v7"
 )
 
-// Raw is a storage with raw data
 type Raw struct {
 	firstLine []byte
 	lastLine  []byte
@@ -38,23 +37,35 @@ func copySlice(slice []byte) []byte {
 	return copiedSlice
 }
 
-// processHotel works stuff with raw hotel byte data
-func processHotel(hotelRaw []byte) {
+// processHotel works with raw hotel byte data
+func processHotel(hotelRaw []byte) error {
 	var hotel models.Hotel
 	err := json.Unmarshal(hotelRaw, &hotel)
-
 	if err == nil {
-		insertHotel(db, hotel)
+		if err := insertHotel(db, hotel); err != nil {
+			return nil
+		}
 
 		data, err := json.Marshal(hotel)
 		if err != nil {
-			fmt.Printf("Error marshalling hotel: %v\n", err)
+			return nil
 		}
 
 		// Use bulk indexing for better performance
-		els.Index("hotels", bytes.NewReader(data))
+		buf := new(bytes.Buffer)
+		meta := []byte(fmt.Sprintf(`{ "index" : { "_index" : "hotels" } }%s`, "\n"))
+		buf.Grow(len(meta) + len(data) + 1)
+		buf.Write(meta)
+		buf.Write(data)
+		buf.Write([]byte("\n"))
+
+		_, err = els.Bulk(bytes.NewReader(buf.Bytes()), els.Bulk.WithIndex("hotels"))
+		if err != nil {
+			return nil
+		}
 	}
 
+	return nil
 }
 
 func processChunk(chunk []byte, sem *semaphore.Weighted, rawChan chan Raw) {
@@ -73,45 +84,52 @@ func processChunk(chunk []byte, sem *semaphore.Weighted, rawChan chan Raw) {
 			log.Printf("Skipping empty line at index %d", i)
 			continue
 		}
-		processHotel(lines[i])
+		if err := processHotel(lines[i]); err != nil {
+			log.Printf("Error processing hotel: %v", err)
+		}
 	}
 }
 
 func processRawHotels(raws []Raw) {
 	for i := range raws {
 		if i == 0 {
-			processHotel(raws[i].firstLine)
+			if err := processHotel(raws[i].firstLine); err != nil {
+				log.Printf("Error processing first line: %v", err)
+			}
 		} else {
 			data := append(raws[i-1].lastLine, raws[i].firstLine...)
-			processHotel(data)
+			if err := processHotel(data); err != nil {
+				log.Printf("Error processing combined data: %v", err)
+			}
 		}
-		// Process the complete last line if it's not the first chunk
 		if len(raws[i].lastLine) > 0 && i < len(raws)-1 {
-			processHotel(raws[i].lastLine)
+			if err := processHotel(raws[i].lastLine); err != nil {
+				log.Printf("Error processing last line: %v", err)
+			}
 		}
 	}
 }
 
 func parseDump(filename string) {
-	// open zst file
+	// Open zst file
 	file, err := os.Open(filename)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer file.Close()
 
-	// make zstd reader
+	// Create zstd reader
 	reader := zstd.NewReader(file)
 	defer reader.Close()
 
-	// we will work the file by 16mb chunk
+	// Buffer size of 16 MB
 	bufferSize := make([]byte, int(math.Pow(2, 24)))
 
-	// with weighted semaphore by max 10 async goroutines
+	// Weighted semaphore for async goroutines
 	ctx := context.Background()
 	sem := semaphore.NewWeighted(int64(10))
 
-	// and make the storage and the transport for raw data
+	// Storage and transport for raw data
 	rawData := make([]Raw, 0)
 	rawChan := make(chan Raw)
 	isFinished := false
@@ -144,7 +162,6 @@ func main() {
 		"teknix", "teknixpw", "127.0.0.1", 5432, "hotels")
 
 	pgsql, err := sql.Open("postgres", connStr)
-
 	if err != nil {
 		log.Fatalf("Failed to open connection to PostgreSQL: %v", err)
 	}
@@ -156,7 +173,7 @@ func main() {
 
 	db = pgsql
 
-	fmt.Println("PostgreSQL connection established successfully (for test)")
+	fmt.Println("PostgreSQL connection established successfully")
 
 	cfg := elasticsearch7.Config{
 		Addresses: []string{
@@ -166,12 +183,10 @@ func main() {
 		Password: "elasticpw",
 	}
 	es, err := elasticsearch7.NewClient(cfg)
-
 	if err != nil {
 		log.Fatalf("Error creating the client: %s", err)
 	}
 
-	// Uncomment if you want to check connection
 	res, err := es.Info()
 	if err != nil {
 		log.Fatalf("Error getting response: %s", err)
@@ -189,6 +204,8 @@ func main() {
 	els = es
 
 	parseDump("partner_feed_en_v3.jsonl.zst")
+
+	fmt.Println("Insert finished")
 }
 
 func insertHotel(db *sql.DB, hotel models.Hotel) error {
@@ -244,7 +261,7 @@ func insertHotel(db *sql.DB, hotel models.Hotel) error {
 		payment_methods, hotel_chain, front_desk_time_start, front_desk_time_end, semantic_version
 	) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30)`
 
-	_, _ = db.Exec(query,
+	_, err = db.Exec(query,
 		hotel.Address,                       // $1
 		string(amenityGroups),               // $2
 		hotel.CheckInTime,                   // $3
@@ -276,5 +293,5 @@ func insertHotel(db *sql.DB, hotel models.Hotel) error {
 		hotel.FrontDeskTimeEnd,              // $29
 		hotel.SemanticVersion)               // $30
 
-	return nil
+	return err
 }
