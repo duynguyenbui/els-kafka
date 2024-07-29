@@ -10,6 +10,7 @@ import (
 	"log"
 	"math"
 	"os"
+	"time"
 
 	"github.com/duynguyenbui/async-reader/models"
 	_ "github.com/lib/pq"
@@ -39,7 +40,7 @@ func processHotel(hotelRaw []byte) {
 	err := json.Unmarshal(hotelRaw, &hotel)
 
 	if err == nil {
-		fmt.Printf("%s\n", hotel.Name)
+		time.Sleep(time.Millisecond * 1)
 		insertHotel(db, hotel)
 	}
 

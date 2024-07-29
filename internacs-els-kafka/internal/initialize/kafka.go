@@ -11,6 +11,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/segmentio/kafka-go"
@@ -28,7 +29,7 @@ func getKafkaReader(kafkaURL, topic, groupID string) *kafka.Reader {
 		GroupID:        groupID,
 		Topic:          topic,
 		MinBytes:       10e3, // 10KB
-		MaxBytes:       10e6, // 10MB
+		MaxBytes:       50e6, // 50MB
 		CommitInterval: time.Second,
 		StartOffset:    kafka.FirstOffset,
 	})
@@ -41,29 +42,55 @@ func registerDebeziumConsumer(groupId string) {
 
 	fmt.Printf("Consumer %s start\n", groupId)
 
+	var wg sync.WaitGroup
+	messageChannel := make(chan kafka.Message, 1000)
+
+	// Increase number of goroutines based on your system's capability
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for m := range messageChannel {
+				var event models.DebeziumEvent
+				err := json.Unmarshal(m.Value, &event)
+				if err != nil {
+					log.Printf("Error unmarshalling message: %v", err)
+					continue
+				}
+
+				if event.Op == "c" {
+					hotel, err := utils.ConvertAfterToHotel(event)
+					if err != nil {
+						fmt.Printf("Error converting after to hotel: %v\n", err)
+						continue
+					}
+
+					data, err := json.Marshal(hotel)
+					if err != nil {
+						fmt.Printf("Error marshalling hotel: %v\n", err)
+						continue
+					}
+
+					// Use bulk indexing for better performance
+					_, err = global.Els.Index(index, bytes.NewReader(data))
+					if err != nil {
+						fmt.Printf("Error indexing document: %v\n", err)
+					}
+				}
+			}
+		}()
+	}
+
 	for {
 		m, err := reader.ReadMessage(context.Background())
 		if err != nil {
 			log.Printf("Consumer %s error: %s\n", groupId, err.Error())
 			continue
 		}
-		var event models.DebeziumEvent
-		json.Unmarshal([]byte(m.Value), &event)
 
-		if event.Op == "c" {
-			hotel, err := utils.ConvertAfterToHotel(event)
-			if err != nil {
-				fmt.Printf("Error converting after to hotel: %v\n", err)
-				return
-			}
-
-			data, err := json.Marshal(hotel)
-			if err != nil {
-				fmt.Printf("Error marshalling hotel: %v\n", err)
-				return
-			}
-
-			global.Els.Index(index, bytes.NewReader(data))
-		}
+		messageChannel <- m
 	}
+
+	close(messageChannel)
+	wg.Wait()
 }
