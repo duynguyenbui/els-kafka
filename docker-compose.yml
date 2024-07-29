@@ -9,6 +9,7 @@ services:
       - ELASTIC_USERNAME=elastic
       - ELASTIC_PASSWORD=elasticpw
       - xpack.security.enabled=true
+      - ES_JAVA_OPTS=-Xms4g -Xmx4g
     ports:
       - 9200:9200
       - 9300:9300
@@ -16,6 +17,11 @@ services:
       - els_data:/usr/share/elasticsearch/data
     networks:
       - kafkaels
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 8G
   kibana:
     image: docker.elastic.co/kibana/kibana:7.17.20
     container_name: kibana

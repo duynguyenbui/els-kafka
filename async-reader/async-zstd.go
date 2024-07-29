@@ -10,13 +10,14 @@ import (
 	"log"
 	"math"
 	"os"
-	"time"
 
 	"github.com/duynguyenbui/async-reader/models"
 	_ "github.com/lib/pq"
 
 	"github.com/DataDog/zstd"
 	"golang.org/x/sync/semaphore"
+
+	elasticsearch7 "github.com/elastic/go-elasticsearch/v7"
 )
 
 // Raw is a storage with raw data
@@ -25,7 +26,10 @@ type Raw struct {
 	lastLine  []byte
 }
 
-var db *sql.DB
+var (
+	db  *sql.DB
+	els *elasticsearch7.Client
+)
 
 // copySlice helps copy raw data without memory leak
 func copySlice(slice []byte) []byte {
@@ -40,8 +44,15 @@ func processHotel(hotelRaw []byte) {
 	err := json.Unmarshal(hotelRaw, &hotel)
 
 	if err == nil {
-		time.Sleep(time.Millisecond * 1)
 		insertHotel(db, hotel)
+
+		data, err := json.Marshal(hotel)
+		if err != nil {
+			fmt.Printf("Error marshalling hotel: %v\n", err)
+		}
+
+		// Use bulk indexing for better performance
+		els.Index("hotels", bytes.NewReader(data))
 	}
 
 }
@@ -147,7 +158,37 @@ func main() {
 
 	fmt.Println("PostgreSQL connection established successfully (for test)")
 
-	parseDump("partner_feed_en_v3_minimal.jsonl.zst")
+	cfg := elasticsearch7.Config{
+		Addresses: []string{
+			"http://localhost:9200",
+		},
+		Username: "elastic",
+		Password: "elasticpw",
+	}
+	es, err := elasticsearch7.NewClient(cfg)
+
+	if err != nil {
+		log.Fatalf("Error creating the client: %s", err)
+	}
+
+	// Uncomment if you want to check connection
+	res, err := es.Info()
+	if err != nil {
+		log.Fatalf("Error getting response: %s", err)
+	}
+	defer res.Body.Close()
+
+	if res.IsError() {
+		log.Fatalf("Error response from Elasticsearch: %s", res.Status())
+	}
+
+	log.Printf("Status: %s", res.Status())
+
+	fmt.Println("Elasticsearch connection established successfully")
+
+	els = es
+
+	parseDump("partner_feed_en_v3.jsonl.zst")
 }
 
 func insertHotel(db *sql.DB, hotel models.Hotel) error {
