@@ -11,6 +11,7 @@ import (
 
 	"github.com/duynguyenbui/async-reader/models"
 	"github.com/jackc/pgx/v4"
+	"github.com/klauspost/compress/zstd"
 )
 
 func main() {
@@ -36,13 +37,19 @@ func main() {
 }
 
 func insertsHotels(conn *pgx.Conn) error {
-	f, err := os.Open("partner_feed_en_v3.jsonl")
+	f, err := os.Open("partner_feed_en_v3.jsonl.zst")
 	if err != nil {
 		return fmt.Errorf("os.Open %w", err)
 	}
 	defer f.Close()
 
-	reader := json.NewDecoder(f)
+	zstdReader, err := zstd.NewReader(f)
+	if err != nil {
+		return fmt.Errorf("zstd.NewReader %w", err)
+	}
+	defer zstdReader.Close()
+
+	reader := json.NewDecoder(zstdReader)
 
 	var count int
 	for {
