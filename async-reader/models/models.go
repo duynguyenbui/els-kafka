@@ -1,101 +1,74 @@
 package models
 
-type Hotel struct {
-	Address       string `json:"address"`
-	AmenityGroups []struct {
-		Amenities []string `json:"amenities"`
-		GroupName string   `json:"group_name"`
-	} `json:"amenity_groups"`
+type Hotels struct {
+	Address           string `json:"address"`
+	AmenityGroups     []any  `json:"amenity_groups"`
 	CheckInTime       string `json:"check_in_time"`
 	CheckOutTime      string `json:"check_out_time"`
 	DescriptionStruct []struct {
 		Paragraphs []string `json:"paragraphs"`
 		Title      string   `json:"title"`
 	} `json:"description_struct"`
-	ID           string        `json:"id"`
-	Images       []interface{} `json:"images"`
-	Kind         string        `json:"kind"`
-	Latitude     float64       `json:"latitude"`
-	Longitude    float64       `json:"longitude"`
-	Name         string        `json:"name"`
-	Phone        string        `json:"phone"`
-	PolicyStruct []interface{} `json:"policy_struct"`
-	PostalCode   string        `json:"postal_code"`
-	RoomGroups   []struct {
-		RoomGroupID   int           `json:"room_group_id"`
-		Images        []interface{} `json:"images"`
-		Name          string        `json:"name"`
-		RoomAmenities []string      `json:"room_amenities"`
-		RgExt         struct {
-			Class    int `json:"class"`
-			Quality  int `json:"quality"`
-			Sex      int `json:"sex"`
-			Bathroom int `json:"bathroom"`
-			Bedding  int `json:"bedding"`
-			Family   int `json:"family"`
-			Capacity int `json:"capacity"`
-			Club     int `json:"club"`
-			Bedrooms int `json:"bedrooms"`
-			Balcony  int `json:"balcony"`
-			Floor    int `json:"floor"`
-			View     int `json:"view"`
-		} `json:"rg_ext"`
-		NameStruct struct {
-			Bathroom    interface{} `json:"bathroom"`
-			BeddingType interface{} `json:"bedding_type"`
-			MainName    string      `json:"main_name"`
-		} `json:"name_struct"`
-	} `json:"room_groups"`
-	Region struct {
-		ID          int         `json:"id"`
-		CountryCode string      `json:"country_code"`
-		Iata        interface{} `json:"iata"`
-		Name        string      `json:"name"`
-		Type        string      `json:"type"`
+	ID           string  `json:"id"`
+	Images       []any   `json:"images"`
+	Kind         string  `json:"kind"`
+	Latitude     float64 `json:"latitude"`
+	Longitude    float64 `json:"longitude"`
+	Name         string  `json:"name"`
+	Phone        any     `json:"phone"`
+	PolicyStruct []any   `json:"policy_struct"`
+	PostalCode   string  `json:"postal_code"`
+	RoomGroups   []any   `json:"room_groups"`
+	Region       struct {
+		ID          int    `json:"id"`
+		CountryCode string `json:"country_code"`
+		Iata        string `json:"iata"`
+		Name        string `json:"name"`
+		Type        string `json:"type"`
 	} `json:"region"`
-	StarRating                    int         `json:"star_rating"`
-	Email                         interface{} `json:"email"`
-	SerpFilters                   []string    `json:"serp_filters"`
-	IsClosed                      bool        `json:"is_closed"`
-	IsGenderSpecificationRequired bool        `json:"is_gender_specification_required"`
+	StarRating                    int   `json:"star_rating"`
+	Email                         any   `json:"email"`
+	SerpFilters                   []any `json:"serp_filters"`
+	IsClosed                      bool  `json:"is_closed"`
+	IsGenderSpecificationRequired bool  `json:"is_gender_specification_required"`
 	MetapolicyStruct              struct {
-		Internet     []interface{} `json:"internet"`
-		Meal         []interface{} `json:"meal"`
-		ChildrenMeal []interface{} `json:"children_meal"`
-		ExtraBed     []interface{} `json:"extra_bed"`
-		Cot          []interface{} `json:"cot"`
-		Pets         []interface{} `json:"pets"`
-		Shuttle      []interface{} `json:"shuttle"`
-		Parking      []interface{} `json:"parking"`
-		Children     []interface{} `json:"children"`
+		Internet     []any `json:"internet"`
+		Meal         []any `json:"meal"`
+		ChildrenMeal []any `json:"children_meal"`
+		ExtraBed     []any `json:"extra_bed"`
+		Cot          []any `json:"cot"`
+		Pets         []any `json:"pets"`
+		Shuttle      []any `json:"shuttle"`
+		Parking      []any `json:"parking"`
+		Children     []any `json:"children"`
 		Visa         struct {
 			VisaSupport string `json:"visa_support"`
 		} `json:"visa"`
-		Deposit []interface{} `json:"deposit"`
+		Deposit []any `json:"deposit"`
 		NoShow  struct {
-			Availability string      `json:"availability"`
-			Time         interface{} `json:"time"`
-			DayPeriod    string      `json:"day_period"`
+			Availability string `json:"availability"`
+			Time         any    `json:"time"`
+			DayPeriod    string `json:"day_period"`
 		} `json:"no_show"`
-		AddFee          []interface{} `json:"add_fee"`
-		CheckInCheckOut []interface{} `json:"check_in_check_out"`
+		AddFee          []any `json:"add_fee"`
+		CheckInCheckOut []any `json:"check_in_check_out"`
 	} `json:"metapolicy_struct"`
-	MetapolicyExtraInfo string      `json:"metapolicy_extra_info"`
-	StarCertificate     interface{} `json:"star_certificate"`
+	MetapolicyExtraInfo any `json:"metapolicy_extra_info"`
+	StarCertificate     any `json:"star_certificate"`
 	Facts               struct {
-		FloorsNumber  interface{} `json:"floors_number"`
-		RoomsNumber   interface{} `json:"rooms_number"`
-		YearBuilt     interface{} `json:"year_built"`
-		YearRenovated interface{} `json:"year_renovated"`
+		FloorsNumber  any `json:"floors_number"`
+		RoomsNumber   int `json:"rooms_number"`
+		YearBuilt     any `json:"year_built"`
+		YearRenovated any `json:"year_renovated"`
 		Electricity   struct {
 			Frequency []int    `json:"frequency"`
 			Voltage   []int    `json:"voltage"`
 			Sockets   []string `json:"sockets"`
 		} `json:"electricity"`
 	} `json:"facts"`
-	PaymentMethods     []interface{} `json:"payment_methods"`
-	HotelChain         string        `json:"hotel_chain"`
-	FrontDeskTimeStart interface{}   `json:"front_desk_time_start"`
-	FrontDeskTimeEnd   interface{}   `json:"front_desk_time_end"`
-	SemanticVersion    int           `json:"semantic_version"`
+	PaymentMethods     []any  `json:"payment_methods"`
+	HotelChain         string `json:"hotel_chain"`
+	FrontDeskTimeStart any    `json:"front_desk_time_start"`
+	FrontDeskTimeEnd   any    `json:"front_desk_time_end"`
+	SemanticVersion    int    `json:"semantic_version"`
 }
