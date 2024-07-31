@@ -37,7 +37,7 @@ func main() {
 }
 
 func insertsHotels(conn *pgx.Conn) error {
-	f, err := os.Open("partner_feed_en_v3.jsonl.zst")
+	f, err := os.Open("partner_feed_en_v3_minimal.jsonl.zst")
 	if err != nil {
 		return fmt.Errorf("os.Open %w", err)
 	}
@@ -60,7 +60,6 @@ func insertsHotels(conn *pgx.Conn) error {
 			return fmt.Errorf("json.Decode %w", err)
 		}
 
-		// Convert complex fields to JSONB format as a string
 		amenityGroups, err := json.Marshal(hotels.AmenityGroups)
 		if err != nil {
 			return fmt.Errorf("json.Marshal amenityGroups %w", err)
