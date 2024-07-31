@@ -15,7 +15,7 @@ CREATE TABLE "hotels" (
   "check_in_time" text,
   "check_out_time" text,
   "description_struct" json,
-  "id" text,
+  "id" text PRIMARY KEY,
   "images" json,
   "kind" text,
   "latitude" double precision,
