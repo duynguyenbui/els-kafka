@@ -7,7 +7,7 @@ services:
       - ELASTIC_USERNAME=elastic
       - ELASTIC_PASSWORD=elasticpw
       - xpack.security.enabled=true
-      - ES_JAVA_OPTS=-Xms4g -Xmx4g
+      - ES_JAVA_OPTS=-Xms3g -Xmx3g
     ports:
       - 9200:9200
       - 9300:9300
@@ -15,11 +15,6 @@ services:
       - els_data:/usr/share/elasticsearch/data
     networks:
       - kafkaels
-    deploy:
-      resources:
-        limits:
-          cpus: '4.0'
-          memory: 8G
 
   kibana:
     image: docker.elastic.co/kibana/kibana:7.17.22
@@ -144,10 +139,25 @@ services:
       SPRING_SECURITY_USER_PASSWORD: kafkauipw
     networks:
       - kafkaels
-
+  caddy:
+    image: caddy:latest
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - kafkaels
 volumes:
   postgres_data:
   els_data:
+  caddy_config:
+  caddy_data:
 
 networks:
   kafkaels:

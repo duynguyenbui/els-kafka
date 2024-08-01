@@ -1,0 +1,11 @@
+kafkaui.huuducnguyen.xyz {
+    reverse_proxy kafka-ui:8080
+}
+
+es-lalala.teknix.dev {
+    reverse_proxy elasticsearch:9200
+}
+
+kb-lalala.teknix.dev {
+    reverse_proxy kibana:5601
+}
