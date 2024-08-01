@@ -4,9 +4,9 @@ services:
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
-      - ELASTIC_USERNAME=elastic
-      - ELASTIC_PASSWORD=elasticpw
-      - xpack.security.enabled=true
+      # - ELASTIC_USERNAME=elastic
+      # - ELASTIC_PASSWORD=elasticpw
+      - xpack.security.enabled=false
       - ES_JAVA_OPTS=-Xms3g -Xmx3g
     ports:
       - 9200:9200
@@ -21,9 +21,9 @@ services:
     container_name: kibana
     environment:
       - ELASTICSEARCH_URL=http://elasticsearch:9200
-      - ELASTICSEARCH_USERNAME=elastic
-      - ELASTICSEARCH_PASSWORD=elasticpw
-      - xpack.security.enabled=true
+      # - ELASTICSEARCH_USERNAME=elastic
+      # - ELASTICSEARCH_PASSWORD=elasticpw
+      - xpack.security.enabled=false
     links:
       - elasticsearch
     ports:
@@ -43,10 +43,10 @@ services:
     volumes:
       - ./logstash/pipeline:/usr/share/logstash/pipeline
     environment:
-      - LS_JAVA_OPTS=-Xms4g -Xmx4g
-      - ELASTICSEARCH_USERNAME=elastic
-      - ELASTICSEARCH_PASSWORD=elasticpw
-      - xpack.security.enabled=true
+      - LS_JAVA_OPTS=-Xms3g -Xmx3g
+      # - ELASTICSEARCH_USERNAME=elastic
+      # - ELASTICSEARCH_PASSWORD=elasticpw
+      - xpack.security.enabled=false
       - xpack.management.enabled=false
 
     networks:
@@ -139,25 +139,25 @@ services:
       SPRING_SECURITY_USER_PASSWORD: kafkauipw
     networks:
       - kafkaels
-  caddy:
-    image: caddy:latest
-    restart: unless-stopped
-    cap_add:
-      - NET_ADMIN
-    ports:
-      - '80:80'
-      - '443:443'
-    volumes:
-      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
-      - caddy_data:/data
-      - caddy_config:/config
-    networks:
-      - kafkaels
+  # caddy:
+  #   image: caddy:latest
+  #   restart: unless-stopped
+  #   cap_add:
+  #     - NET_ADMIN
+  #   ports:
+  #     - '80:80'
+  #     - '443:443'
+  #   volumes:
+  #     - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+  #     - caddy_data:/data
+  #     - caddy_config:/config
+  #   networks:
+  #     - kafkaels
 volumes:
   postgres_data:
   els_data:
-  caddy_config:
-  caddy_data:
+  # caddy_config:
+  # caddy_data:
 
 networks:
   kafkaels:
