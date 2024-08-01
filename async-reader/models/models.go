@@ -72,3 +72,71 @@ type Hotels struct {
 	FrontDeskTimeEnd   any    `json:"front_desk_time_end"`
 	SemanticVersion    int    `json:"semantic_version"`
 }
+
+type Regions struct {
+	CountryName struct {
+		Ar   string `json:"ar"`
+		Bg   string `json:"bg"`
+		Cs   string `json:"cs"`
+		De   string `json:"de"`
+		El   string `json:"el"`
+		En   string `json:"en"`
+		Es   string `json:"es"`
+		Fr   string `json:"fr"`
+		He   string `json:"he"`
+		Hu   string `json:"hu"`
+		It   string `json:"it"`
+		Ja   string `json:"ja"`
+		Kk   string `json:"kk"`
+		Ko   string `json:"ko"`
+		Nl   string `json:"nl"`
+		Pl   string `json:"pl"`
+		Pt   string `json:"pt"`
+		PtPT string `json:"pt_PT"`
+		Ro   string `json:"ro"`
+		Ru   string `json:"ru"`
+		Sq   string `json:"sq"`
+		Sr   string `json:"sr"`
+		Th   string `json:"th"`
+		Tr   string `json:"tr"`
+		Vi   string `json:"vi"`
+		ZhCN string `json:"zh_CN"`
+	} `json:"country_name"`
+	CountryCode string `json:"country_code"`
+	Center      struct {
+		Longitude float64 `json:"longitude"`
+		Latitude  float64 `json:"latitude"`
+	} `json:"center"`
+	Hotels []string `json:"hotels"`
+	Iata   string   `json:"iata"`
+	ID     int      `json:"id"`
+	Type   string   `json:"type"`
+	Name   struct {
+		Ar   string `json:"ar"`
+		Bg   string `json:"bg"`
+		Cs   string `json:"cs"`
+		De   string `json:"de"`
+		El   string `json:"el"`
+		En   string `json:"en"`
+		Es   string `json:"es"`
+		Fr   string `json:"fr"`
+		He   string `json:"he"`
+		Hu   string `json:"hu"`
+		It   string `json:"it"`
+		Ja   string `json:"ja"`
+		Kk   string `json:"kk"`
+		Ko   string `json:"ko"`
+		Nl   string `json:"nl"`
+		Pl   string `json:"pl"`
+		Pt   string `json:"pt"`
+		PtPT string `json:"pt_PT"`
+		Ro   string `json:"ro"`
+		Ru   string `json:"ru"`
+		Sq   string `json:"sq"`
+		Sr   string `json:"sr"`
+		Th   string `json:"th"`
+		Tr   string `json:"tr"`
+		Vi   string `json:"vi"`
+		ZhCN string `json:"zh_CN"`
+	} `json:"name"`
+}

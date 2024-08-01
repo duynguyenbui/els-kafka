@@ -1,4 +1,3 @@
---- Create the hotels Database
 CREATE DATABASE hotels
     WITH OWNER = 'teknix'
     ENCODING = 'UTF8'
@@ -40,4 +39,25 @@ CREATE TABLE "hotels" (
   "front_desk_time_start" text NULL,
   "front_desk_time_end" text NULL,
   "semantic_version" bigint
+);
+
+CREATE DATABASE regions
+    WITH OWNER = 'teknix'
+    ENCODING = 'UTF8'
+    LC_COLLATE = 'en_US.utf8'
+    LC_CTYPE = 'en_US.utf8'
+    TABLESPACE = pg_default
+    CONNECTION LIMIT = -1;
+
+\c regions
+
+CREATE TABLE "regions" (
+  "country_name" json,
+  "country_code" text,
+  "center" json,
+  "hotels" json,
+  "iata" text NULL,
+  "id" bigint,
+  "type" text,
+  "name" json
 );
