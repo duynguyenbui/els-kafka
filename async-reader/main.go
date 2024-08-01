@@ -11,24 +11,21 @@ import (
 
 	"github.com/duynguyenbui/async-reader/models"
 	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/klauspost/compress/zstd"
 )
 
 func main() {
 	conn, err := newConn()
 	if err != nil {
-		fmt.Println("newDB", err)
+		fmt.Println("hotels", err)
 		return
 	}
-
-	defer func() {
-		_ = conn.Close(context.Background())
-		fmt.Println("closed")
-	}()
+	defer conn.Close()
 
 	now := time.Now()
 
-	if err := insertsHotels(conn); err != nil {
+	if err := insertHotels(conn); err != nil {
 		fmt.Println("failed", err)
 		return
 	}
@@ -36,8 +33,8 @@ func main() {
 	fmt.Println("total", time.Since(now))
 }
 
-func insertsHotels(conn *pgx.Conn) error {
-	f, err := os.Open("partner_feed_en_v3.jsonl.zst")
+func insertHotels(conn *pgxpool.Pool) error {
+	f, err := os.Open("partner_feed_en_v3_minimal.jsonl.zst")
 	if err != nil {
 		return fmt.Errorf("os.Open %w", err)
 	}
@@ -52,8 +49,10 @@ func insertsHotels(conn *pgx.Conn) error {
 	reader := json.NewDecoder(zstdReader)
 
 	var count int
+	batch := &pgx.Batch{}
+
 	for {
-		var hotels models.Hotels // Ensure you are using the correct type for Hotels
+		var hotels models.Hotels
 		if err := reader.Decode(&hotels); err == io.EOF {
 			break
 		} else if err != nil {
@@ -109,7 +108,7 @@ func insertsHotels(conn *pgx.Conn) error {
 			return fmt.Errorf("json.Marshal paymentMethods %w", err)
 		}
 
-		_, err = conn.Exec(context.Background(), `
+		batch.Queue(`
 			INSERT INTO hotels (
 				id, address, amenity_groups, check_in_time, check_out_time, description_struct, 
 				images, kind, latitude, longitude, name, phone, policy_struct, postal_code, 
@@ -132,19 +131,22 @@ func insertsHotels(conn *pgx.Conn) error {
 			starCertificate, facts, paymentMethods, hotels.HotelChain, hotels.FrontDeskTimeStart,
 			hotels.FrontDeskTimeEnd, hotels.SemanticVersion,
 		)
-		if err != nil {
-			return fmt.Errorf("conn.Exec %w", err)
-		}
-
 		count++
 	}
 
-	fmt.Println("rows", count)
+	br := conn.SendBatch(context.Background(), batch)
+	if _, err := br.Exec(); err != nil {
+		return fmt.Errorf("batch.Exec %w", err)
+	}
+	if err := br.Close(); err != nil {
+		return fmt.Errorf("batch.Close %w", err)
+	}
 
+	fmt.Println("rows", count)
 	return nil
 }
 
-func newConn() (*pgx.Conn, error) {
+func newConn() (*pgxpool.Pool, error) {
 	dsn := url.URL{
 		Scheme: "postgres",
 		Host:   "localhost:5432",
@@ -157,7 +159,7 @@ func newConn() (*pgx.Conn, error) {
 
 	dsn.RawQuery = q.Encode()
 
-	conn, err := pgx.Connect(context.Background(), dsn.String())
+	conn, err := pgxpool.Connect(context.Background(), dsn.String())
 	if err != nil {
 		return nil, fmt.Errorf("pgx.Connect %w", err)
 	}
